@@ -1,0 +1,25 @@
+<form name="hiddenValues">
+	<input type="hidden" name="stepTest" value="{{ game.step }}" />
+	<input type="hidden" name="phase" value="{{ game.phase }}" />
+</form>
+	<form action="/action" method="get">
+		<div>
+			Game name: <input type="text" name="arg" value="{{ game.name }}" size=60 />
+			<input type="submit" value="Save" />
+		</div>
+		<input type="hidden" name="a" value="106" />
+		<input type="hidden" name="game" value="{{ gameId }}" />
+	</form>
+	<div>Players:</div>
+    {% for player in players %}
+	<div>{{ player.user.nickname }} <a href="/action?game={{ gameId }}&a=105&arg={{ player.key }}">remove</a></div>
+	{% endfor %}
+
+	<a href="/action?game={{ gameId }}&a=103">Join</a>
+	<a href="/action?game={{ gameId }}&a=104">Start</a>
+	<br />
+	<br />
+	<div style=" height: 100px; width: 600px; overflow: auto;" id="chatbox">
+{% for i in game.chatHistory %}<div>{{ i }}</div>
+{% endfor %}
+	</div>
