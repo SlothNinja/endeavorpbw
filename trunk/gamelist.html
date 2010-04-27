@@ -1,0 +1,45 @@
+<html>
+  <head>
+	<title>Endeavor Play-By-Web</title>
+    <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+  </head>
+  <body onload="startup()">
+    <script type="text/javascript">
+		function startup()
+		{
+			chatbox = document.getElementById("chatbox");
+			chatbox.scrollTop = chatbox.scrollHeight;
+		}
+    </script>
+
+    <div><a href="{{ url }}">{{ url_linktext }}</a></div>
+	<br />
+	{% if user %}
+	<div><a href="/newgame">New Game</a></div>
+	<br />
+
+	<div>My games:</div>
+	{% for game in myGames %}
+    <div><a href="/?game={{ game.key }}">{{ game.name }}</a></div>
+	{% endfor %}
+	<br />
+	{% endif %}
+
+	<div>Games waiting to start:</div>
+	{% for game in games %}
+    <div><a href="/?game={{ game.key }}">{{ game.name }}</a></div>
+	{% endfor %}
+	<br />
+
+	<div>Games in progress:</div>
+	{% for game in gamesInProgress %}
+    <div><a href="/?game={{ game.key }}">{{ game.name }}</a></div>
+	{% endfor %}
+	<br />
+
+	<div>Finished games:</div>
+	{% for game in gamesFinished %}
+    <div><a href="/?game={{ game.key }}">{{ game.name }}</a></div>
+	{% endfor %}
+  </body>
+</html>

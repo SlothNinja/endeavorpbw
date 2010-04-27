@@ -1,0 +1,244 @@
+<html>
+  <head>
+	<title>Endeavor Play-By-Web</title>
+    <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+  </head>
+  <body>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+
+		var activated = -1;
+		var pos1 = -1;
+		var multipleAction
+		var phase = {{ game.phase }}
+		
+		function CheckNew()
+		{
+			$.ajax({
+			  url: '/wait?game={{ gameId }}&step={{ game.step }}&w=6',
+			  success: function(data) {
+				if (data == '1')
+				{
+					location.reload(true);
+				}
+				else
+				{
+					setTimeout("CheckNew()", 5000)
+				}
+			  }
+			});			
+		}
+		
+		$(document).ready(function(){
+			chatbox = document.getElementById("chatbox");
+			chatbox.scrollTop = chatbox.scrollHeight;
+			
+			setTimeout("CheckNew()", 5000)
+		});
+		
+		function startup()
+		{
+			chatbox = document.getElementById("chatbox");
+			chatbox.scrollTop = chatbox.scrollHeight;
+		}
+		
+		function getURLParam(strParamName)
+		{ 
+			var strReturn = ""; 
+			var strHref = window.location.href; 
+			if ( strHref.indexOf("?") > -1 )
+			{ 
+				var strQueryString = strHref.substr(strHref.indexOf("?")); 
+				var aQueryString = strQueryString.split("&"); 
+				for ( var iParam = 0; iParam < aQueryString.length; iParam++ )
+				{ 
+					if (aQueryString[iParam].indexOf(strParamName + "=") > -1 )
+					{ 
+						var aParam = aQueryString[iParam].split("="); 
+						strReturn = aParam[1]; 
+						break; 
+					} 
+				} 
+			}
+			return strReturn; 
+		}
+
+		function Build(buildingId)
+		{
+			window.location = "/action?game=" + getURLParam('game') + "&a=8&arg=" + buildingId;
+		}
+		
+		function Activate(b, m)
+		{
+			if (phase == 1)
+			{
+				activated = 101;
+				Position(100 + b);
+			}
+			
+			if (activated != -1)
+			{
+				Position(100 + b);
+				return;
+			}
+
+			activated = b;
+			multipleAction = m;
+			
+			var building = document.getElementById("building" + b);
+			var colonist = document.createElement('img');
+			colonist.setAttribute('src', '{{ game.turn|colonistImage }}');
+			colonist.setAttribute("style", "position:absolute; left: 67px; top: 17px;");
+			building.appendChild(colonist);
+		}
+		
+		function Position(p)
+		{
+			if (activated == -1) return;
+			
+			if (!multipleAction)
+			{
+				window.location = "/action?game=" + getURLParam('game') + "&a=" + activated + "&arg=" + p;
+/*				$.ajax({
+				  url: "/action?game=" + getURLParam('game') + "&a=" + activated + "&arg=" + p,
+				  success: function(data) {
+				    alert(data);
+//				    alert('Load was performed.');
+				  }
+				});*/
+			}
+			else
+			{
+				if (pos1 == -1)
+				{
+					pos1 = p;
+				}
+				else
+				{
+					window.location = "/action?game=" + getURLParam('game') + "&a=" + activated + "&arg=" + pos1 + "&arg2=" + p;
+				}
+			}
+		}
+
+		function Draw(p)
+		{
+			Position(p + 200);
+		}
+		
+		function Discard(p)
+		{
+			var answer = confirm("Are you sure you want to discard that card?")
+			if (answer)
+			{
+				activated = 102;
+				Position(p + 200);
+			}
+		}
+		
+		function Pass()
+		{
+			window.location = "/action?game=" + getURLParam('game') + "&a=100";
+		}
+    </script>
+
+    <a href="http://endeavorpbw.appspot.com/gamelist">Game List</a> &nbsp; <a href="{{ url }}">{{ url_linktext }}</a>
+
+	<div style="position:relative; width:500px">
+		<img src="images/board.jpg" />
+	    {% for token in game.boardTokens %}
+			{% if token|isNotNegativeOne %}
+			<a href="javascript:Position({{ forloop.counter0 }})">
+			<img src="{{ token|tokenImage }}" style="position:absolute; left: {{ forloop.counter0|locationX }}px; top: {{ forloop.counter0|locationY }}px;" />
+			</a>
+			{% endif %}
+	    {% endfor %}
+		{% for card in topCards %}
+			{% if card|isNotNegativeOne %}
+				<a href="javascript:Draw({{ card }})">
+					<img src="{{ card|cardImage }}" style="position:absolute; left: {{ forloop.counter0|cardBoardLocationX }}px; top: {{ forloop.counter0|cardBoardLocationY }}px;"{% if forloop.counter0|isRotatedCard %} class="rotated"{% endif %} />
+				</a>
+			{% endif %}
+	    {% endfor %}
+	</div>
+	<div style="position:relative; width:565; height:225;">
+	    {% for building in buildings %}
+			{% if building.remaining %}
+				<a href="javascript:Build({{ forloop.counter0 }})">
+				<span style="position:absolute; left: {{ building.x }}px; top: {{ building.y }}px;">
+					<img src="{{ building.image }}" />
+					<span style="color:black; font-weight:bold; position:absolute; left: 50px; top: 5px;">{{ building.remaining }}</span>
+				</span>
+				</a>
+			{% endif %}
+	    {% endfor %}
+		<div style="position:relative; left:565;">
+			<div>Phase: {{ game.phase|PhaseToStr }}</div>
+			<div>Turn: {{ currentPlayer.user.nickname }}</div>
+		</div>
+	</div>
+
+	<a href="javascript:Pass()">pass</a>
+    {% for player in players %}
+		<div>{{ player.user.nickname }}</div>
+		<div style="position:relative">
+			<img src="images/playerboard.jpg" />
+			<img src="{{ player.position|markerImage }}" style="position:absolute; left: {{ player.tokenCounts.0|markerLocationX }}px; top: 11px;" />
+			<img src="{{ player.position|markerImage }}" style="position:absolute; left: {{ player.tokenCounts.1|markerLocationX }}px; top: 89px;" />
+			<img src="{{ player.position|markerImage }}" style="position:absolute; left: {{ player.tokenCounts.2|markerLocationX }}px; top: 167px;" />
+			<img src="{{ player.position|markerImage }}" style="position:absolute; left: {{ player.tokenCounts.3|markerLocationX }}px; top: 245px;" />
+		    {% for building in player.zippedBuildings %}
+				{% if player.isCurrentPlayer %}
+				<a href="javascript:Activate({{ forloop.counter0 }}, {% if building.0|IsMultipleActionBuilding %}true{% else %}false{% endif %})">
+				{% endif %}
+				<span style="position:absolute; left: {{ forloop.counter0|buildingLocationX }}px; top: {{ forloop.counter0|buildingLocationY }}px;"{% if player.isCurrentPlayer %} id="building{{ forloop.counter0 }}"{% endif %}>
+					<img src="{{ building.0|buildingImage }}" />
+					{% if building.1 %}
+					<img src="{{ player.position|colonistImage }}" style="position:absolute; left: 67px; top: 17px;"/>
+					{% endif %}
+				</span>
+				{% if player.isCurrentPlayer %}
+				</a>
+				{% endif %}
+		    {% endfor %}
+			{% if player.isFirstPlayer %}
+				<img src="images/first-player.png" style="position:absolute; left: 580px; top: 300px;"/>
+			{% endif %}
+			{% if player.colonists %}
+				<span style="position:absolute; left: 530px; top: 340px;">
+					<img src="{{ player.position|colonistImage }}"/>
+					<span style="color:{{ player.position|colonistFontColor }}; position:absolute; left: 15px; top: 10px;">{{ player.colonists }}</span>
+				</span>
+			{% endif %}
+			{% for count in player.tokenCounts %}
+				{% if forloop.counter0|greaterThan:3 %}
+				{% if forloop.counter0|lessThan:8 %}
+					{% if count %}
+						<a href="javascript:Activate({{ forloop.counter0|add:5 }})">
+						<span style="position:absolute; left: {{ forloop.counter0|playerTokenLocationX }}px; top: 390px;">
+							<img src="{{ forloop.counter0|tokenImage }}"/>
+							<span style="color:white; position:absolute; left: 15px; top: 10px;">{{ count }}</span>
+						</span>
+						</a>
+					{% endif %}
+				{% endif %}
+				{% endif %}
+		    {% endfor %}
+			{% for card in player.cards %}
+				<a href="javascript:Discard({{ card }})">
+					<img src="{{ card|cardImage }}" style="position:absolute; left: {{ forloop.counter0|cardLocationX }}px; top: 482px;" />
+				</a>
+		    {% endfor %}
+		</div>
+    {% endfor %}
+
+	<div style=" height: 200px; width: 600px; overflow: auto;" id="chatbox">
+{% for i in game.chatHistory %}<div>{{ i }}</div>
+{% endfor %}
+	</div>
+	<br />
+	<form action="chat" method="get">
+		<input type="hidden" name="game" value="{{ gameId }}">
+		<input type="text" name="t" size=120 />
+	</form>
+  </body>
+</html>

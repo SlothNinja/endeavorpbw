@@ -1,0 +1,194 @@
+<html>
+  <head>
+	<title>Endeavor Play-By-Web</title>
+    <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+  </head>
+  <body>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+
+		var activated = -1;
+		var pos1 = -1;
+		var multipleAction
+		var ajaxRefresh;
+		
+		var colonist;
+		
+		function GetStep()
+		{
+			return document.hiddenValues.stepTest.value;
+		}
+		
+		function CheckNew()
+		{
+			ajaxRefresh = $.ajax({
+			  url: '/?game={{ gameId }}&ajax=1&wait=' + GetStep(),
+			  success: function(data) {
+				if (data)
+				{
+					prevPhase = document.hiddenValues.phase.value;
+					$('#content').html(data);
+					FixChatBox()
+					activated = -1;
+					pos1 = -1;
+					if (prevPhase == 3 && document.hiddenValues.phase.value != 3)
+					{
+						window.location.reload();
+					}
+					else
+					{
+						setTimeout("CheckNew()", 5000)
+					}
+				}
+				else
+				{
+					setTimeout("CheckNew()", 5000)
+				}
+			  }
+			});			
+		}
+		
+		function FixChatBox()
+		{
+			chatbox = document.getElementById("chatbox");
+			chatbox.scrollTop = chatbox.scrollHeight;
+		}
+		
+		$(document).ready(function(){
+			FixChatBox()
+			setTimeout("CheckNew()", 5000)
+		});
+		
+		function getURLParam(strParamName)
+		{ 
+			var strReturn = ""; 
+			var strHref = window.location.href;
+			if ( strHref.indexOf("?") > -1 )
+			{
+				var strQueryString = strHref.substr(strHref.indexOf("?")); 
+				var aQueryString = strQueryString.split("&"); 
+				for ( var iParam = 0; iParam < aQueryString.length; iParam++ )
+				{ 
+					if (aQueryString[iParam].indexOf(strParamName + "=") > -1 )
+					{ 
+						var aParam = aQueryString[iParam].split("="); 
+						strReturn = aParam[1]; 
+						break; 
+					} 
+				} 
+			}
+			return strReturn; 
+		}
+		
+		function Go(url)
+		{
+//			ajaxRefresh.abort();
+			
+			$.ajax({
+			  url: url,
+			  success: function(data) {
+				if (data)
+				{
+					prevPhase = document.hiddenValues.phase.value;
+					$('#content').html(data);
+					FixChatBox()
+					activated = -1;
+					pos1 = -1;
+					if (prevPhase == 3 && document.hiddenValues.phase.value != 3)
+					{
+						window.location.reload();
+					}
+				}
+			  }
+			});
+		}
+
+		function Build(buildingId)
+		{
+			Go("/action?game={{ gameId }}&ajax=1&a=8&arg=" + buildingId);
+//			window.location = "/action?game=" + getURLParam('game') + "&a=8&arg=" + buildingId;
+		}
+		
+		function Activate(b, m)
+		{
+			if (document.hiddenValues.phase.value == 1)
+			{
+				activated = 101;
+				Position(100 + b);
+				return;
+			}
+			
+			if (activated != -1)
+			{
+				if (activated == b)
+				{
+					var answer = confirm("Are you sure you want to occupy this building, and not use its ability?")
+					if (!answer)
+					{
+						activated = -1;
+						pos1 = -1;
+						colonist.style.visibility = 'hidden';
+						return;
+					}
+				}
+				Position(100 + b);
+				return;
+			}
+
+			activated = b;
+			multipleAction = m;
+			
+			var building = document.getElementById("building" + b);
+			colonist = document.createElement('img');
+			colonist.setAttribute('src', document.hiddenValues.colonistImage.value);
+			colonist.setAttribute("style", "position:absolute; left: 67px; top: 17px;");
+			building.appendChild(colonist);
+		}
+		
+		function Position(p)
+		{
+			if (activated == -1) return;
+			
+			if (!multipleAction)
+			{
+				Go("/action?game={{ gameId }}&ajax=1&a=" + activated + "&arg=" + p);
+			}
+			else
+			{
+				if (pos1 == -1)
+				{
+					pos1 = p;
+				}
+				else
+				{
+					Go("/action?game={{ gameId }}&ajax=1&a=" + activated + "&arg=" + pos1 + "&arg2=" + p)
+//					window.location = "/action?game=" + getURLParam('game') + "&a=" + activated + "&arg=" + pos1 + "&arg2=" + p;
+				}
+			}
+		}
+
+		function Draw(p)
+		{
+			Position(p + 200);
+		}
+		
+		function Discard(p)
+		{
+			var answer = confirm("Are you sure you want to discard that card?")
+			if (answer)
+			{
+				activated = 102;
+				Position(p + 200);
+			}
+		}
+		
+		function Pass()
+		{
+			Go("/action?game={{ gameId }}&ajax=1&a=100");
+//			window.location = "/action?game=" + getURLParam('game') + "&a=100";
+		}
+    </script>
+
+<a href="http://endeavorpbw.appspot.com/gamelist">Game List</a> &nbsp; <a href="{{ url }}">{{ url_linktext }}</a>
+&nbsp; Notice: If this build has bugs, use the previous one <a href='http://3.latest.endeavorpbw.appspot.com/?game={{ gameId }}'>here</a>
+<div id='content'>
