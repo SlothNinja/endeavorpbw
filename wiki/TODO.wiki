@@ -1,0 +1,5 @@
+TODO:
+
+- make a todo list
+
+If you start on a task that another developer may also decide to work on, put it in here, so there's no duplicate work.
