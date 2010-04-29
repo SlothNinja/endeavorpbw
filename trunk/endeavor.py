@@ -9,8 +9,8 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext import db
 from google.appengine.ext.webapp import template
 
-cheatColonists = False
-cheatOccupied = False
+cheatColonists = True
+cheatOccupied = True
 cheatPresence = False
 
 tokenType = [
@@ -327,7 +327,38 @@ locations = [
 	{ 'x': 1128, 'y': 257 },	# far east connections
 	{ 'x': 953, 'y': 435 },
 	{ 'x': 1068, 'y': 535 },
-	{ 'x': 0, 'y': 0 },
+	
+	# extra shipping spots
+	{ 'x': 656, 'y': 1031 },	# africa shipping 95
+	{ 'x': 650, 'y': 1083 },
+	{ 'x': 656, 'y': 1137 },
+	{ 'x': 678, 'y': 1183 },
+	{ 'x': 718, 'y': 1217 },
+	{ 'x': 409, 'y': 991 },		# south america shipping
+	{ 'x': 375, 'y': 1031 },
+	{ 'x': 352, 'y': 1078 },
+	{ 'x': 389, 'y': 1118 },
+	{ 'x': 422, 'y': 1160 },
+	{ 'x': 116, 'y': 493 },		# caribbean shipping
+	{ 'x': 92, 'y': 541 },
+	{ 'x': 80, 'y': 592 },
+	{ 'x': 75, 'y': 645 },
+	{ 'x': 74, 'y': 699 },
+	{ 'x': 257, 'y': 272 },		# north america shipping
+	{ 'x': 262, 'y': 218 },
+	{ 'x': 264, 'y': 166 },
+	{ 'x': 262, 'y': 113 },
+	{ 'x': 242, 'y': 64 },
+	{ 'x': 716, 'y': 226 },		# india shipping
+	{ 'x': 754, 'y': 189 },
+	{ 'x': 770, 'y': 139 },
+	{ 'x': 768, 'y': 87 },
+	{ 'x': 736, 'y': 47 },
+	{ 'x': 1196, 'y': 255 },	# far east shipping
+	{ 'x': 1211, 'y': 204 },
+	{ 'x': 1226, 'y': 153 },
+	{ 'x': 1236, 'y': 102 },
+	{ 'x': 1218, 'y': 53 },
 ]
 
 connections = [
@@ -473,12 +504,12 @@ regionTokens = [
 
 regionShippingTokens = [
 	[],
-	[29,30,31,32,33,34],
-	[35,36,37,38,39,40],
-	[41,42,43,44,45,46],
-	[47,48,49,50,51,52,53],
-	[54,55,56,57,58,59,60],
-	[61,62,63,64,65,66,67,68],
+	[29,30,31,32,33,34,  95,96,97,98,99],
+	[35,36,37,38,39,40, 100,101,102,103,104],
+	[41,42,43,44,45,46, 105,106,107,108,109],
+	[47,48,49,50,51,52,53, 110,111,112,113,114],
+	[54,55,56,57,58,59,60, 115,116,117,118,119],
+	[61,62,63,64,65,66,67,68, 120,121,122,123,124],
 ]
 
 tokenRegions = [0]*69
@@ -486,7 +517,7 @@ for region in range(0,len(regionTokens)):
 	for locationInRegion in range(0,len(regionTokens[region])):
 		tokenRegions[regionTokens[region][locationInRegion]] = region
 		
-shippingTokenRegions = [0]*69
+shippingTokenRegions = [0]*125 #[0]*69
 for region in range(0,len(regionShippingTokens)):
 	for locationInRegion in range(0,len(regionShippingTokens[region])):
 		shippingTokenRegions[regionShippingTokens[region][locationInRegion]] = region
@@ -841,8 +872,8 @@ def CanOccupy(player, tokenLocation):
 	if region == 0:
 		return True
 	for i in regionShippingTokens[region]:
-		if not game.boardTokens[i] in [8,9,10,11,12]:
-			error = 'You can\'t occupy a location taken by an enemy'
+		if not game.boardTokens[i] in [-1,8,9,10,11,12]:
+			error = 'That region isn\'t opened up yet'
 			return False
 	if GetPresence(player, region) < 1:
 		error = 'You don\'t have presence there'
@@ -896,7 +927,7 @@ def GetNextShippingLocation(region):
 	global game
 	
 	for location in regionShippingTokens[region]:
-		if game.boardTokens[location] in [0,1,2,3,4,5,6,7]:
+		if game.boardTokens[location] in [-1,0,1,2,3,4,5,6,7]:
 			return location
 	return -1
 
@@ -917,7 +948,11 @@ def Ship(arg):
 	players[game.turn].colonists -= 1
 	game.boardTokens[location] = 8 + players[game.turn].position
 	Highlight(location)
-	players[game.turn].tokenCounts[token] += 1
+
+	increaseDescription = ''
+	if token != -1:
+		players[game.turn].tokenCounts[token] += 1
+		increaseDescription = ' (Gained ' + tokenType[token]['name'] + ')'
 
 	if location == 29+5:
 		HandOutGovernorCard(game.boardTokens[29:29+6], 0)
@@ -932,14 +967,14 @@ def Ship(arg):
 	elif location == 29+6+6+6+7+7+7:
 		HandOutGovernorCard(game.boardTokens[29+6+6+6+7+7:29+6+6+6+7+7+8], 2)
 		
-	ChatHistory(players[game.turn], 'shipped ' + str(location))
+	ChatHistory(players[game.turn], 'shipped ' + str(location) + increaseDescription)
 
 	return True
 
 def ResetHighlight():
 	global game
 
-	game.tokenHighlighted = [False]*95
+	game.tokenHighlighted = [False]*(95+6*5)
 
 def Highlight(arg):
 	global game
@@ -1040,10 +1075,12 @@ def AutoPay():
 		players[game.turn].put()
 
 def PointsToScore(points):
+	if points >= 15:
+		return 15 # clip scores to 15
 	if points >= 10:
 		return points
 	return pointsToScore[points]
-		
+
 def CalculateFinalScore():
 	global game, players
 	
@@ -1267,6 +1304,9 @@ class Action(webapp.RequestHandler):
 		
 		positionType = GetPositionType(arg)
 		positionType2 = GetPositionType(arg2)
+		
+		if len(game.boardTokens) == 95:
+			game.boardTokens += [-1]*(6*5)
 
 		error = ''
 		if not users.get_current_user():
@@ -1565,7 +1605,7 @@ class NewGame(webapp.RequestHandler):
 		global game
 		if users.get_current_user():
 			game = Game(
-				boardTokens=getRandomBoardTokens(),
+				boardTokens=getRandomBoardTokens() + [-1]*(6*5),
 				phase=Phase_WAITING_FOR_PLAYERS,
 				remainingBuildings=[0,5,5,5,4,4,4,3,3,3,2,2,2,1,1,1],
 				remainingCards=[
@@ -1616,31 +1656,6 @@ def ChatHistoryUser(user, text, separator=' '):
 	global game
 	timeStamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 	game.chatHistory.append('[' + timeStamp + ' UTC] <span style=\'color: black\'>' + user.nickname() + '</span>' + separator + cgi.escape(text))
-
-class Chat(webapp.RequestHandler):
-	def get(self):
-		global game,players
-		error = ''
-		gameId = self.request.get('game')
-		text = self.request.get('t')
-		game = db.get(db.Key(gameId))
-		playersQuery = game.player_set
-		playersQuery.order('position')
-		players = playersQuery.fetch(100)
-		
-		if game.phase == Phase_WAITING_FOR_PLAYERS:
-			ChatHistoryUser(users.get_current_user(), text, ': ')
-			PutGame()
-		elif IsUserInGame():
-			ChatHistory(players[GetUserPosition()], text, ': ')
-			PutGame()
-		else:
-			error = 'You\'re not in this game'
-
-		url = '/?game=' + str(gameId)
-		if error:
-			url = url + '&e=' + error
-		self.redirect(url)
 
 class GameList(webapp.RequestHandler):
 	def get(self):
@@ -1696,30 +1711,11 @@ class GameList(webapp.RequestHandler):
 		path = os.path.join(os.path.dirname(__file__), 'gamelist.html')
 		self.response.out.write(template.render(path, template_values))
 
-class WaitForChange(webapp.RequestHandler):
-	def get(self):
-		gameId = self.request.get('game')
-		step = int(self.request.get('step'))
-		w = int(self.request.get('w'))
-		gameKey = db.Key(gameId)
-		for i in range(w):
-			if i != 0:
-				time.sleep(5)
-			game = db.get(gameKey)
-			if game.step > step:
-				self.response.out.write('1')
-				return
-		self.response.out.write('0')
-		return
-
-
 application = webapp.WSGIApplication(
                                      [('/', MainPage),
                                       ('/gamelist', GameList),
                                       ('/action', Action),
-                                      ('/newgame', NewGame),
-                                      ('/chat', Chat),
-                                      ('/wait', WaitForChange)],
+                                      ('/newgame', NewGame)],
                                      debug=True)
 
 def main():
