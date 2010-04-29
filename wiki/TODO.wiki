@@ -1,4 +1,3 @@
-  * allow shipping to a full region
   * 2p variant rules
   * have the option to order players by time zone, instead of randomly
   * redesign docks/cartographer/office interface.
