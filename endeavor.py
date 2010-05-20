@@ -647,6 +647,7 @@ class Game(db.Model):
 	name = db.StringProperty()
 	timeCreated = db.DateTimeProperty()
 	step = db.IntegerProperty()
+	lastUpdated = db.DateTimeProperty()
 
 class Player(db.Model):
 	game = db.ReferenceProperty(Game)
@@ -1280,6 +1281,7 @@ def PutGame():
 	if not game.step:
 		game.step = 0
 	game.step += 1
+	game.lastUpdated = datetime.datetime.now()
 	game.put()
 
 class Action(webapp.RequestHandler):
@@ -1620,6 +1622,7 @@ class NewGame(webapp.RequestHandler):
 				],
 				name=users.get_current_user().nickname() + '\'s game',
 				timeCreated = datetime.datetime.now(),
+				lastUpdated = datetime.datetime.now(),
 				step=0,
 			)
 			gameId = game.put()
@@ -1666,9 +1669,9 @@ class GameList(webapp.RequestHandler):
 			url = users.create_login_url(self.request.uri)
 			url_linktext = 'Login'
 			
-		games = db.GqlQuery("SELECT * from Game WHERE phase=3 ORDER BY timeCreated DESC").fetch(30)#" ORDER BY timeCreated")
-		gamesInProgress = db.GqlQuery("SELECT * from Game WHERE phase in (0,1,2) ORDER BY timeCreated DESC").fetch(30)
-		gamesFinished = db.GqlQuery("SELECT * from Game WHERE phase=4 ORDER BY timeCreated DESC").fetch(30)#" ORDER BY timeCreated")
+		games = db.GqlQuery("SELECT * from Game WHERE phase=3 ORDER BY lastUpdated DESC").fetch(30)#" ORDER BY timeCreated")
+		gamesInProgress = db.GqlQuery("SELECT * from Game WHERE phase in (0,1,2) ORDER BY lastUpdated DESC").fetch(30)
+		gamesFinished = db.GqlQuery("SELECT * from Game WHERE phase=4 ORDER BY lastUpdated DESC").fetch(30)#" ORDER BY timeCreated")
 		
 #		myPlayers = db.GqlQuery("SELECT * from Player WHERE user=:1 AND timeCreated=NULL", users.get_current_user()).fetch(100)
 #		myPlayers = db.GqlQuery("SELECT * from Player WHERE user=:1 ORDER BY timeCreated DESC", users.get_current_user()).fetch(100)
@@ -1683,7 +1686,7 @@ class GameList(webapp.RequestHandler):
 				if not exists:
 					myGames.append(player.game)
 
-		myGames = sorted(myGames, key=lambda game: game.timeCreated, reverse=True)
+		myGames = sorted(myGames, key=lambda game: game.lastUpdated, reverse=True)
 		
 
 #		myGames = []
