@@ -1659,6 +1659,12 @@ def ChatHistoryUser(user, text, separator=' '):
 	global game
 	timeStamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 	game.chatHistory.append('[' + timeStamp + ' UTC] <span style=\'color: black\'>' + user.nickname() + '</span>' + separator + cgi.escape(text))
+	
+def FixLastUpdated():
+	games = db.GqlQuery("SELECT * from Game")
+	for game in games:
+		game.lastUpdated = datetime.datetime.now()
+		game.put()
 
 class GameList(webapp.RequestHandler):
 	def get(self):
@@ -1669,16 +1675,18 @@ class GameList(webapp.RequestHandler):
 			url = users.create_login_url(self.request.uri)
 			url_linktext = 'Login'
 			
-		games = db.GqlQuery("SELECT * from Game WHERE phase=3 ORDER BY lastUpdated DESC").fetch(30)#" ORDER BY timeCreated")
-		gamesInProgress = db.GqlQuery("SELECT * from Game WHERE phase in (0,1,2) ORDER BY lastUpdated DESC").fetch(30)
-		gamesFinished = db.GqlQuery("SELECT * from Game WHERE phase=4 ORDER BY lastUpdated DESC").fetch(30)#" ORDER BY timeCreated")
+#		FixLastUpdated()
+			
+		games = db.GqlQuery("SELECT * from Game WHERE phase=3 ORDER BY lastUpdated DESC").fetch(50)#" ORDER BY timeCreated")
+		gamesInProgress = db.GqlQuery("SELECT * from Game WHERE phase in (0,1,2) ORDER BY lastUpdated DESC").fetch(50)
+		gamesFinished = db.GqlQuery("SELECT * from Game WHERE phase=4 ORDER BY lastUpdated DESC").fetch(50)#" ORDER BY timeCreated")
 		
 #		myPlayers = db.GqlQuery("SELECT * from Player WHERE user=:1 AND timeCreated=NULL", users.get_current_user()).fetch(100)
 #		myPlayers = db.GqlQuery("SELECT * from Player WHERE user=:1 ORDER BY timeCreated DESC", users.get_current_user()).fetch(100)
 		myPlayers = db.GqlQuery("SELECT * from Player WHERE user=:1", users.get_current_user()).fetch(100)
 		myGames = []
 		for player in myPlayers:
-			if player.game.phase in (0,1,2,3):
+			if player.game.phase in (0,1,2,3,4):
 				exists = False
 				for game in myGames:
 					if game.key() == player.game.key():
